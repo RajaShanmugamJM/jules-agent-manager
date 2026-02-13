@@ -10,14 +10,26 @@ class JulesProvider with ChangeNotifier {
   List<Session> _sessions = [];
   List<Source> _sources = [];
   List<Activity> _activities = [];
+  Activity? _latestPlan;
   bool _isLoading = false;
   String? _error;
 
   List<Session> get sessions => _sessions;
   List<Source> get sources => _sources;
   List<Activity> get activities => _activities;
+  Activity? get latestPlan => _latestPlan;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  void _updateLatestPlan() {
+    try {
+      _latestPlan = _activities.lastWhere(
+        (a) => a.type == ActivityType.planning,
+      );
+    } catch (_) {
+      _latestPlan = null;
+    }
+  }
 
   void updateApiService(ApiService? service) {
     _apiService = service;
@@ -27,6 +39,7 @@ class JulesProvider with ChangeNotifier {
       _sessions = [];
       _sources = [];
       _activities = [];
+      _latestPlan = null;
     }
     notifyListeners();
   }
@@ -89,12 +102,14 @@ class JulesProvider with ChangeNotifier {
     _isLoading = true;
     _error = null;
     _activities = [];
+    _latestPlan = null;
     notifyListeners();
     try {
       _activities = await _apiService!.getActivities(sessionId);
       // Sort activities chronological? Usually they come chronological.
       // PRD says "chronological list".
       _activities.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      _updateLatestPlan();
     } catch (e) {
       _error = e.toString();
     } finally {

@@ -16,9 +16,18 @@ class SessionDetailScreen extends StatefulWidget {
 }
 
 class _SessionDetailScreenState extends State<SessionDetailScreen> {
+  late final Activity _noPlanActivity;
+
   @override
   void initState() {
     super.initState();
+    _noPlanActivity = Activity(
+      id: '',
+      type: ActivityType.planning,
+      description: 'No plan generated yet.',
+      timestamp: DateTime.now(),
+      metadata: {},
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<JulesProvider>().fetchActivities(widget.session.sessionId);
     });
@@ -53,16 +62,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     );
 
     // Find the latest plan
-    final planActivity = activities.lastWhere(
-      (a) => a.type == ActivityType.planning,
-      orElse: () => Activity(
-        id: '',
-        type: ActivityType.planning,
-        description: 'No plan generated yet.',
-        timestamp: DateTime.now(),
-        metadata: {},
-      ),
-    );
+    final planActivity = provider.latestPlan ?? _noPlanActivity;
 
     return DefaultTabController(
       length: 2,
