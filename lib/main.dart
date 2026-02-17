@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/jules_provider.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/settings_screen.dart';
+import 'screens/setup_screen.dart';
 import 'services/api_service.dart';
 
 void main() {
@@ -58,7 +58,7 @@ class AuthWrapper extends StatelessWidget {
     if (auth.isAuthenticated) {
       return const DashboardScreen();
     } else {
-      return const SettingsScreen();
+      return const SetupScreen();
     }
   }
 }
