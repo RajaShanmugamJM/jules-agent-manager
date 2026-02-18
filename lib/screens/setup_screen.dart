@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../services/storage_service.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -17,6 +18,22 @@ class _SetupScreenState extends State<SetupScreen> {
   bool _isSecureStorageEnabled = true;
   bool _isLoading = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSecureStoragePreference();
+  }
+
+  Future<void> _loadSecureStoragePreference() async {
+    final storageService = StorageService();
+    final isEnabled = await storageService.getSecureStoragePreference();
+    if (mounted) {
+      setState(() {
+        _isSecureStorageEnabled = isEnabled;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -155,9 +172,11 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        // TODO: Implement URL launch
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Visit jules.google.com/settings')),
+                          const SnackBar(
+                            content: Text('Please visit https://jules.google.com/settings in your browser to manage API keys.'),
+                            duration: Duration(seconds: 5),
+                          ),
                         );
                       },
                       child: Row(
@@ -186,6 +205,7 @@ class _SetupScreenState extends State<SetupScreen> {
                       setState(() {
                         _isSecureStorageEnabled = value;
                       });
+                      StorageService().saveSecureStoragePreference(value);
                     },
                     secondary: Container(
                       padding: const EdgeInsets.all(8),
