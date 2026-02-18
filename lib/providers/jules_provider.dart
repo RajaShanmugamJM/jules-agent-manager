@@ -97,23 +97,30 @@ class JulesProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchActivities(String sessionId) async {
+  Future<void> fetchActivities(String sessionId,
+      {bool background = false}) async {
     if (_apiService == null) return;
-    _isLoading = true;
+    if (!background) {
+      _isLoading = true;
+      _activities = [];
+      _latestPlan = null;
+      notifyListeners();
+    }
     _error = null;
-    _activities = [];
-    _latestPlan = null;
-    notifyListeners();
+
     try {
-      _activities = await _apiService!.getActivities(sessionId);
+      final newActivities = await _apiService!.getActivities(sessionId);
       // Sort activities chronological? Usually they come chronological.
       // PRD says "chronological list".
-      _activities.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      newActivities.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      _activities = newActivities;
       _updateLatestPlan();
     } catch (e) {
       _error = e.toString();
     } finally {
-      _isLoading = false;
+      if (!background) {
+        _isLoading = false;
+      }
       notifyListeners();
     }
   }
@@ -125,6 +132,24 @@ class JulesProvider with ChangeNotifier {
     notifyListeners();
     try {
       await _apiService!.approvePlan(sessionId);
+      await fetchActivities(sessionId);
+      await fetchSessions();
+    } catch (e) {
+      _error = e.toString();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> rejectPlan(String sessionId) async {
+    if (_apiService == null) return;
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _apiService!.rejectPlan(sessionId);
       await fetchActivities(sessionId);
       await fetchSessions();
     } catch (e) {

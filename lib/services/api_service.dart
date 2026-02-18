@@ -88,4 +88,12 @@ class ApiService {
       throw Exception('Failed to approve plan: ${response.body}');
     }
   }
+
+  Future<void> rejectPlan(String sessionId) async {
+    final url = '$baseUrl/v1alpha/$sessionId:rejectPlan';
+    final response = await http.post(Uri.parse(url), headers: _headers);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to reject plan: ${response.body}');
+    }
+  }
 }

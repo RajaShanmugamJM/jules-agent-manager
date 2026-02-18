@@ -14,6 +14,7 @@ class _CreateSessionScreenState extends State<CreateSessionScreen> {
   final _formKey = GlobalKey<FormState>();
   String? _selectedSource;
   final _promptController = TextEditingController();
+  final List<String> _attachedFiles = [];
   bool _requirePlanApproval = true;
   bool _isLoading = false;
 
@@ -117,6 +118,58 @@ class _CreateSessionScreenState extends State<CreateSessionScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.attach_file),
+                    onPressed: () {
+                      // Mock file picker
+                      setState(() {
+                        _attachedFiles
+                            .add('context_file_${_attachedFiles.length + 1}.dart');
+                      });
+                    },
+                    tooltip: 'Attach File',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.mic),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Voice-to-text started (mock)')),
+                      );
+                    },
+                    tooltip: 'Voice Input',
+                  ),
+                  const Spacer(),
+                  if (_attachedFiles.isNotEmpty)
+                    Text('${_attachedFiles.length} files attached',
+                        style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+              if (_attachedFiles.isNotEmpty)
+                Container(
+                  height: 50,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _attachedFiles.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: InputChip(
+                          label: Text(_attachedFiles[index]),
+                          onDeleted: () {
+                            setState(() {
+                              _attachedFiles.removeAt(index);
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
               const SizedBox(height: 16),
               SwitchListTile(
                 title: const Text('Require Plan Approval'),

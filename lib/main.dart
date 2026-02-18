@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/jules_provider.dart';
-import 'screens/dashboard_screen.dart';
+import 'screens/main_screen.dart';
 import 'screens/setup_screen.dart';
 import 'services/api_service.dart';
 
@@ -56,7 +56,7 @@ class AuthWrapper extends StatelessWidget {
     }
 
     if (auth.isAuthenticated) {
-      return const DashboardScreen();
+      return const MainScreen();
     } else {
       return const SetupScreen();
     }

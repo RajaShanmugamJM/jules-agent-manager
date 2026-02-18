@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/session.dart';
 import '../models/activity.dart';
 import '../providers/jules_provider.dart';
+import 'live_logs_widget.dart';
 
 class SessionDetailScreen extends StatefulWidget {
   final Session session;
@@ -50,6 +51,21 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
     }
   }
 
+  Future<void> _rejectPlan() async {
+    try {
+      await context.read<JulesProvider>().rejectPlan(widget.session.sessionId);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Plan rejected!')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error rejecting plan: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<JulesProvider>();
@@ -81,29 +97,63 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             : TabBarView(
                 children: [
                   _buildPlanView(planActivity),
-                  _buildActivityList(activities),
+                  LiveLogsWidget(session: session),
                 ],
               ),
         bottomNavigationBar: session.status == SessionStatus.waitingForApproval
             ? SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: ElevatedButton(
-                    onPressed: provider.isLoading ? null : _approvePlan,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: provider.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed:
+                                  provider.isLoading ? null : _rejectPlan,
+                              style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red),
+                              child: const Text('Reject'),
                             ),
-                          )
-                        : const Text('Approve Plan & Execute'),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text('Edit Plan not implemented')));
+                              },
+                              child: const Text('Edit Plan'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: provider.isLoading ? null : _approvePlan,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: provider.isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Approve Plan & Execute'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               )
@@ -113,60 +163,83 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
   }
 
   Widget _buildPlanView(Activity planActivity) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Metrics
+          Row(
+            children: [
+              _buildMetricCard('Est. Duration', '5m 30s', Icons.timer),
+              const SizedBox(width: 16),
+              _buildMetricCard('Files Impacted', '3', Icons.file_copy),
+            ],
+          ),
+          const SizedBox(height: 24),
+
           Text(
             'Plan generated at ${DateFormat.yMMMd().add_jm().format(planActivity.timestamp)}',
             style: const TextStyle(color: Colors.grey, fontSize: 12),
           ),
           const Divider(),
-          Expanded(child: Markdown(data: planActivity.description)),
+
+          // Plan Content
+          MarkdownBody(data: planActivity.description),
+
+          const SizedBox(height: 24),
+          const Text('Proposed Changes',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const SizedBox(height: 16),
+
+          // Mock Diff Viewer
+          _buildDiffViewer('lib/main.dart',
+              '- return DashboardScreen();\n+ return MainScreen();'),
+          _buildDiffViewer('lib/screens/dashboard.dart',
+              '+ import \'package:flutter/material.dart\';'),
         ],
       ),
     );
   }
 
-  Widget _buildActivityList(List<Activity> activities) {
-    if (activities.isEmpty) {
-      return const Center(child: Text('No activity yet.'));
-    }
-    // Sort activities descending for list view? PRD says chronological.
-    // Usually logs are newest at bottom or top.
-    // If chronological (oldest first), then the last item is the latest.
-    // Provider sorts by timestamp ascending.
-    // So list view should display them in that order.
-
-    return ListView.builder(
-      itemCount: activities.length,
-      itemBuilder: (context, index) {
-        final activity = activities[index];
-        return ListTile(
-          leading: _getActivityIcon(activity.type),
-          title: Text(activity.description),
-          subtitle: Text(
-            DateFormat.yMMMd().add_jm().format(activity.timestamp),
+  Widget _buildMetricCard(String title, String value, IconData icon) {
+    return Expanded(
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            children: [
+              Icon(icon, color: Colors.blue),
+              const SizedBox(height: 8),
+              Text(value,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(title,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            ],
           ),
-          isThreeLine: true,
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _getActivityIcon(ActivityType type) {
-    switch (type) {
-      case ActivityType.planning:
-        return const Icon(Icons.map, color: Colors.blue);
-      case ActivityType.execution:
-        return const Icon(Icons.code, color: Colors.orange);
-      case ActivityType.interaction:
-        return const Icon(Icons.chat, color: Colors.purple);
-      case ActivityType.results:
-        return const Icon(Icons.check_circle, color: Colors.green);
-      default:
-        return const Icon(Icons.info, color: Colors.grey);
-    }
+  Widget _buildDiffViewer(String filename, String diff) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ExpansionTile(
+        title:
+            Text(filename, style: const TextStyle(fontWeight: FontWeight.w600)),
+        leading: const Icon(Icons.description, size: 20),
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            color: Colors.grey.shade100,
+            child: Text(diff, style: const TextStyle(fontFamily: 'monospace')),
+          ),
+        ],
+      ),
+    );
   }
+
 }
