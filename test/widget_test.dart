@@ -3,7 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:app/main.dart';
 
 void main() {
-  testWidgets('Initial screen is Settings', (WidgetTester tester) async {
+  testWidgets('Initial screen is Setup', (WidgetTester tester) async {
     // Mock secure storage
     FlutterSecureStorage.setMockInitialValues({});
     
@@ -13,8 +13,8 @@ void main() {
     // Wait for animations and async tasks
     await tester.pumpAndSettle();
 
-    // Verify that we are on Settings Screen
-    expect(find.text('Jules Settings'), findsOneWidget);
-    expect(find.text('API Key'), findsOneWidget);
+    // Verify that we are on Setup Screen
+    expect(find.text('Authentication & API\nSetup'), findsOneWidget);
+    expect(find.text('Jules API Key'), findsOneWidget);
   });
 }

@@ -16,9 +16,11 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setApiKey(String key) async {
+  Future<void> setApiKey(String key, {bool persist = true}) async {
     _apiKey = key;
-    await _storageService.saveApiKey(key);
+    if (persist) {
+      await _storageService.saveApiKey(key);
+    }
     notifyListeners();
   }
 
